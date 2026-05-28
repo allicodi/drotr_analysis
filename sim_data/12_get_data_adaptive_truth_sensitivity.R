@@ -11,7 +11,9 @@ seed <- Sys.getenv("SLURM_ARRAY_TASK_ID")
 cargs <- commandArgs(TRUE)
 sens_type <- cargs[[1]] # mar or mcar
 
-if(sens_type != "mar" | sense_type != "mcar"){
+print(sens_type)
+
+if(sens_type != "mar" & sens_type != "mcar"){
   stop("sens_type must be mar or mcar")
 }
 
