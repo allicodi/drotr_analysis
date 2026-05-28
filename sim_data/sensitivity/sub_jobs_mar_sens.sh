@@ -8,4 +8,4 @@ sbatch --array=1-$NSEEDS \
        -n 1 \
        --output=/projects/dbenkes/allison/drotr_sim/journal/results_sim_data/scratch/%a_%J.out \
        --job-name=run_seed_%a \
-       --wrap "Rscript 11_run_mar_sensitivity.R $SLURM_ARRAY_TASK_ID"
+       --wrap "Rscript sensitivity/11_run_mar_sensitivity.R $SLURM_ARRAY_TASK_ID"
