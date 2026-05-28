@@ -1,8 +1,8 @@
 # ---------------------------------------------------------------
-# Script to run sensitivity analysis for higher proportion MCAR 
+# Script to run sensitivity analysis for MAR- dependent on site
 # ---------------------------------------------------------------
 
-here::i_am("10_run_mcar_sensitivity.R")
+here::i_am("sensitivity/11_run_mar_sensitivity.R")
 
 library(drotr)
 
@@ -19,8 +19,8 @@ n <- 6692
 
 # ---------------- Data Generation & Model Specification -------------------
 
-# Generate Simulation Data -- MCAR, 25% 
-abcd_data <- generate_abcd(n, mcar_sens = TRUE, mcar_prop = 0.25)
+# Generate Simulation Data -- MAR dependent on site
+abcd_data <- generate_abcd(n, mar_sens = TRUE)
 
 # Nuisance Model Specification
 
@@ -68,7 +68,7 @@ threshold_list <- c(0.05, 0.15, 0.25, 0.35)
 
 nuisance_path <- paste0(
   "/projects/dbenkes/allison/drotr_sim/journal/results_sim_data/nuisance/",
-  "mcar_nuisance_n_", n, "_seed_", seed, ".Rds"
+  "mar_nuisance_n_", n, "_seed_", seed, ".Rds"
 )
 
 if (file.exists(nuisance_path)) {
@@ -121,5 +121,5 @@ results_gold_standard <- estimate_OTR(df = abcd_data,
 
 print(results_gold_standard)
 
-saveRDS(results_gold_standard, file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_sim_data/results_object/gold_standard/mcar_full_results_n_",n,"_seed_", seed, ".Rds"))
-saveRDS(results_gold_standard$results, file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_sim_data/results_object/gold_standard/mcar_results_n_",n,"_seed_", seed, ".Rds"))
+saveRDS(results_gold_standard, file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_sim_data/results_object/gold_standard/mar_full_results_n_",n,"_seed_", seed, ".Rds"))
+saveRDS(results_gold_standard$results, file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_sim_data/results_object/gold_standard/mar_results_n_",n,"_seed_", seed, ".Rds"))

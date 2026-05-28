@@ -1,7 +1,7 @@
 library(drotr)
 library(data.table)
 
-here::i_am("12_get_data_adaptive_truth_sensitivity.R")
+here::i_am("sensitivity/13_get_data_adaptive_truth_sensitivity.R")
 
 library(drotr)
 
@@ -182,5 +182,5 @@ truth_by_seed <- data.frame(
 )
 
 # save overall dataframe with truths for given seed
-write.csv(truth_by_seed, file=paste0("results_csv/" sens_type, "_gs_data_adaptive_truth_seed_",seed,".csv"), row.names=FALSE)
+write.csv(truth_by_seed, file=paste0("results_csv/", sens_type, "_gs_data_adaptive_truth_seed_",seed,".csv"), row.names=FALSE)
 
