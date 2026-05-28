@@ -121,5 +121,5 @@ results_gold_standard <- estimate_OTR(df = abcd_data,
 
 print(results_gold_standard)
 
-# saveRDS(results_gold_standard, file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_sim_data/results_object/gold_standard/mcar_full_results_n_",n,"_seed_", seed, ".Rds"))
+saveRDS(results_gold_standard, file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_sim_data/results_object/gold_standard/mar_full_results_n_",n,"_seed_", seed, ".Rds"))
 saveRDS(results_gold_standard$results, file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_sim_data/results_object/gold_standard/mar_results_n_",n,"_seed_", seed, ".Rds"))
