@@ -3,7 +3,8 @@ here::i_am("sensitivity/15_simulation_data_adaptive_truth_comparison_sensitivity
 library(dplyr)
 library(kableExtra)
 
-missing_types <- c("mcar", "mar")
+# missing_types <- c("mcar", "mar")
+missing_types <- c("mcar")
 threshold_list <- c(0.05)
 
 get_data_adaptive_results_table <- function(t,

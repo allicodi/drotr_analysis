@@ -90,7 +90,7 @@ if (file.exists(nuisance_path)) {
     sl.library.treatment = sl.library.treatment,
     sl.library.missingness = sl.library.missingness,
     outcome_type = "gaussian",
-    k_folds = 10,
+    k_folds = 5,
     ps_trunc_level = 0.01
   )
   
@@ -115,7 +115,7 @@ results_gold_standard <- estimate_OTR(df = abcd_data,
                                       k_fold_assign_and_CATE = k_fold_assign_and_CATE,
                                       validRows = validRows,
                                       threshold = threshold_list,
-                                      k_folds = 10,
+                                      k_folds = 5,
                                       ps_trunc_level = 0.01,
                                       outcome_type = "gaussian")
 
