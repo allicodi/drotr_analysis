@@ -17,7 +17,7 @@ combined_data_gs_mar <- data.table()
 # for every file in the list, check and make sure timestamp is past a certain point 
 # (to make sure im not adding old results if i changed something)
 for(file in file_list_mar){
-  if(file.info(file)$mtime > as.POSIXct("2026-05-27")){
+  if(file.info(file)$mtime > as.POSIXct("2026-05-29")){
     
     #read in results and rbind into combined_data_gs which will hold all of the results from every seed
     data <- fread(file)
@@ -36,7 +36,7 @@ combined_data_gs_mcar <- data.table()
 # for every file in the list, check and make sure timestamp is past a certain point 
 # (to make sure im not adding old results if i changed something)
 for(file in file_list_mcar){
-  if(file.info(file)$mtime > as.POSIXct("2026-05-27")){
+  if(file.info(file)$mtime > as.POSIXct("2026-05-29")){
     
     #read in results and rbind into combined_data_gs which will hold all of the results from every seed
     data <- fread(file)
