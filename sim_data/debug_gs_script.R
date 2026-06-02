@@ -152,6 +152,8 @@ CATE_models <- results_gold_standard$CATE_models
 # empty dataframe to hold truth for each fold
 k_truth <- data.frame()
 
+thresholds <- c(0.05)
+
 # for each of the k = 10 CATE models:
 for(i in 1:length(CATE_models)){
   
