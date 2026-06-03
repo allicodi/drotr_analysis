@@ -5,7 +5,10 @@ library(stringr)
 
 dir_gs <- "/projects/dbenkes/allison/drotr_sim/journal/results_sim_data/results_object/gold_standard"
 
-file_list_gs <- list.files(dir_gs, pattern="^debug_results_n_6692_", full.names=TRUE)
+cargs <- commandArgs(TRUE)
+folds <- cargs[[1]]
+
+file_list_gs <- list.files(dir_gs, pattern=paste0("^debug_results_n_6692_folds_", folds), full.names=TRUE)
 
 # ----- Gold Standard Results -----
 
@@ -24,7 +27,7 @@ for(file in file_list_gs){
   }
 }
 
-write.csv(combined_data_gs, file="results_csv/debug_gold_standard_n_6692.csv", row.names=FALSE)
+write.csv(combined_data_gs, file=paste0("results_csv/debug_gold_standard_n_6692_folds_", folds, ".csv"), row.names=FALSE)
 
 # ------- Data adaptive truth --------------
 
@@ -34,7 +37,7 @@ dir <- "results_csv/"
 
 # get names of all the results in the results_csv folder that match the pattern
 # there will be one file for every seed 
-file_list_gs <- list.files(dir, pattern="^debug_gs_data_adaptive_truth_", full.names=TRUE)
+file_list_gs <- list.files(dir, pattern=paste0("^debug_gs_data_adaptive_truth_n_6692_folds_", folds), full.names=TRUE)
 
 # ----- Gold Standard -----
 
@@ -53,5 +56,5 @@ for(file in file_list_gs){
 }
 
 # write data adaptive truth into truth folder
-write.csv(combined_data_gs, file="truth/debug_gs_data_adaptive_truth_by_seed.csv", row.names=FALSE)
+write.csv(combined_data_gs, file=paste0("truth/debug_gs_data_adaptive_truth_by_seed_folds_", folds, ".csv"), row.names=FALSE)
 
