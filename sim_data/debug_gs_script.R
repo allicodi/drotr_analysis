@@ -17,7 +17,7 @@ seed <- Sys.getenv("SLURM_ARRAY_TASK_ID")
 set.seed(seed)
 
 cargs <- commandArgs(TRUE)
-folds <- cargs[[1]]
+folds <- as.numeric(cargs[[1]])
 
 # size of ABCD dataset
 n <- 6692
