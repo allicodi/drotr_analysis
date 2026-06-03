@@ -17,7 +17,7 @@ combined_data_gs <- data.table()
 for(file in file_list_gs){
   if(file.info(file)$mtime > as.POSIXct("2026-06-02")){
     data <- readRDS(file)
-    seed <- str_extract(basename(file), "(?<=debug_results_n_6692_seed_)\\d+")
+    seed <- str_extract(basename(file), paste0("(?<=debug_results_n_6692_folds_" ,folds, "_seed_)\\d+"))
     
     for(t in 1:(length(data)-1)){
       res_table <- data[[t]]$aggregated_results
