@@ -16,6 +16,9 @@ source("01_wrappers.R")
 seed <- Sys.getenv("SLURM_ARRAY_TASK_ID")
 set.seed(seed)
 
+cargs <- commandArgs(TRUE)
+folds <- cargs[[1]]
+
 # size of ABCD dataset
 n <- 6692
 
@@ -80,7 +83,7 @@ nuisance_output <- learn_nuisance(df = abcd_data,
                                   sl.library.treatment = sl.library.treatment,
                                   sl.library.missingness = sl.library.missingness,
                                   outcome_type = "gaussian",
-                                  k_folds = 10,
+                                  k_folds = folds,
                                   ps_trunc_level = 0.01)
 
 nuisance_models <- nuisance_output$nuisance_models
@@ -88,7 +91,7 @@ k_fold_assign_and_CATE <- nuisance_output$k_fold_assign_and_CATE
 validRows <- nuisance_output$validRows
 
 if(seed %in% 1:10){
-  saveRDS(nuisance_output, file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_sim_data/nuisance/debug_nuisance_n_", n, "_seed_", seed, ".Rds"))
+  saveRDS(nuisance_output, file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_sim_data/nuisance/debug_nuisance_n_", n, "_folds_", folds, "_seed_", seed, ".Rds"))
 }
 
 # ------------------------- Rule based on all-information ----------------------------
@@ -104,16 +107,16 @@ results_gold_standard <- estimate_OTR(df = abcd_data,
                                       k_fold_assign_and_CATE = k_fold_assign_and_CATE,
                                       validRows = validRows,
                                       threshold = threshold_list,
-                                      k_folds = 10,
+                                      k_folds = folds,
                                       ps_trunc_level = 0.01,
                                       outcome_type = "gaussian")
 
 print(results_gold_standard)
 
 if(seed %in% 1:10){
-  saveRDS(results_gold_standard, file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_sim_data/results_object/gold_standard/debug_full_results_n_",n,"_seed_", seed, ".Rds"))
+  saveRDS(results_gold_standard, file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_sim_data/results_object/gold_standard/debug_full_results_n_", n, "_folds_", folds, "_seed_", seed, ".Rds"))
 }
-saveRDS(results_gold_standard$results, file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_sim_data/results_object/gold_standard/debug_results_n_",n,"_seed_", seed, ".Rds"))
+saveRDS(results_gold_standard$results, file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_sim_data/results_object/gold_standard/debug_results_n_", n, "_folds_", folds, "_seed_", seed, ".Rds"))
 
 ## Data adaptive step to predict on large dataset ------------------------------
 
@@ -251,6 +254,7 @@ mean_over_folds <- cbind(mean_over_folds, se_E_dZ1_gs)
 # this is silly idk why i didn't just add seed to existing mean_over_folds but oh well 
 truth_by_seed <- data.frame(
   seed = seed,
+  folds = folds, 
   threshold = mean_over_folds['threshold'],
   EY_A1_dZ1_gs = mean_over_folds['EY_A1_dZ1_gs'],
   EY_A0_dZ1_gs = mean_over_folds['EY_A0_dZ1_gs'],
@@ -263,5 +267,5 @@ truth_by_seed <- data.frame(
 )
 
 # save overall dataframe with truths for given seed
-write.csv(truth_by_seed, file=paste0("results_csv/debug_gs_data_adaptive_truth_seed_",seed,".csv"), row.names=FALSE)
+write.csv(truth_by_seed, file=paste0("results_csv/debug_gs_data_adaptive_truth_n_", n, "_folds_", folds, "_seed_", seed, ".csv"), row.names=FALSE)
 
