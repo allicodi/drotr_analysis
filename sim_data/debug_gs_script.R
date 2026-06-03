@@ -123,7 +123,7 @@ saveRDS(results_gold_standard$results, file = paste0("/projects/dbenkes/allison/
 set.seed(12345)
 
 # abcd_data_sim <- generate_abcd(1e5)
-abcd_data_sim <- generate_abcd(5e5) # increase to see if this helps?? 
+abcd_data_sim <- generate_abcd(n = 1e5, potential_outcomes = TRUE) # increase to see if this helps?? 
 
 # predict function for avgSuperLearner, not sure why it wasn't finding it in drotr utils.R?? just copied over
 predict.avgSuperLearner <- function(x, newdata, ...){
@@ -164,7 +164,7 @@ for(i in 1:length(CATE_models)){
   model <- CATE_models[[i]]
   
   # predict using model for a given fold on big dataset
-  abcd_data_sim$true_CATE <- stats::predict(model, newdata = Z_gs, type = 'response')
+  abcd_data_sim$pred_CATE <- stats::predict(model, newdata = Z_gs, type = 'response')
   
   # iterate over each of the five thresholds
   for(t in 1:length(thresholds)){
@@ -175,7 +175,7 @@ for(i in 1:length(CATE_models)){
     if(!(i %in% k_non_na)) next;
     
     # get decisions for the kth model using threshold t
-    abcd_data_sim$dZ_gs <- ifelse(abcd_data_sim$true_CATE > threshold, 1, 0)
+    abcd_data_sim$dZ_gs <- ifelse(abcd_data_sim$pred_CATE > threshold, 1, 0)
     
     # get dataframe of just treated people
     abcd_data_sim_treated_gs <- abcd_data_sim[which(abcd_data_sim$dZ_gs == 1),]
@@ -183,17 +183,21 @@ for(i in 1:length(CATE_models)){
     # get dataframe of just untreated people
     abcd_data_sim_untreated_gs <- abcd_data_sim[which(abcd_data_sim$dZ_gs == 0),]
     
-    # E[Y(1) | d(Z) = 1] 
-    EY_A1_dZ1_gs <- mean(abcd_data_sim_treated_gs$lazd90[abcd_data_sim_treated_gs$an_grp_01 == 1], na.rm=TRUE) #na.rm = true for extreme cases when everyone or nobody treated
+    # E[Y(1) | d(Z) = 1]
+    EY_A1_dZ1_gs <- mean(abcd_data_sim_treated_gs$lazd90_mu1, na.rm=TRUE) #na.rm = true for extreme cases when everyone or nobody treated
+    # EY_A1_dZ1_gs <- mean(abcd_data_sim_treated_gs$lazd90[abcd_data_sim_treated_gs$an_grp_01 == 1], na.rm=TRUE) #na.rm = true for extreme cases when everyone or nobody treated
     
     # E[Y(0) | d(Z) = 1] 
-    EY_A0_dZ1_gs <- mean(abcd_data_sim_treated_gs$lazd90[abcd_data_sim_treated_gs$an_grp_01 == 0], na.rm=TRUE)
+    EY_A0_dZ1_gs <- mean(abcd_data_sim_treated_gs$lazd90_mu0, na.rm=TRUE) #na.rm = true for extreme cases when everyone or nobody treated
+    # EY_A0_dZ1_gs <- mean(abcd_data_sim_treated_gs$lazd90[abcd_data_sim_treated_gs$an_grp_01 == 0], na.rm=TRUE)
     
     # E[Y(1) | d(Z) = 0] 
-    EY_A1_dZ0_gs <- mean(abcd_data_sim_untreated_gs$lazd90[abcd_data_sim_untreated_gs$an_grp_01 == 1], na.rm=TRUE)
+    EY_A1_dZ0_gs <- mean(abcd_data_sim_untreated_gs$lazd90_mu1, na.rm=TRUE) #na.rm = true for extreme cases when everyone or nobody treated
+    # EY_A1_dZ0_gs <- mean(abcd_data_sim_untreated_gs$lazd90[abcd_data_sim_untreated_gs$an_grp_01 == 1], na.rm=TRUE)
     
     # E[Y(0) | d(Z) = 0] 
-    EY_A0_dZ0_gs <- mean(abcd_data_sim_untreated_gs$lazd90[abcd_data_sim_untreated_gs$an_grp_01 == 0], na.rm=TRUE)
+    EY_A0_dZ0_gs <- mean(abcd_data_sim_untreated_gs$lazd90_mu0, na.rm=TRUE) #na.rm = true for extreme cases when everyone or nobody treated
+    # EY_A0_dZ0_gs <- mean(abcd_data_sim_untreated_gs$lazd90[abcd_data_sim_untreated_gs$an_grp_01 == 0], na.rm=TRUE)
     
     # E[d(Z) = 1] 
     E_dZ1_gs <- mean(abcd_data_sim$dZ_gs)
