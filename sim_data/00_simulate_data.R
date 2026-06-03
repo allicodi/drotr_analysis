@@ -267,57 +267,14 @@ treatment_assignment <- function(n){
 
 # ----------------------------- Outcome Simulation Function ------------------------------------ 
 
-#' Function to generate lazd90 based on formatted ABCD simulation dataset
+#' Conditional mean for lazd90 under treatment a
 #'
-#' @param abcd_sim dataset of simulated abcd data
+#' @param abcd_data_sim dataset of simulated abcd data
+#' @param a binary treatment value 
 #'
-#' @returns dataset of size nrow(abcd_data_sim) with added lazd90 outcome variable
-generate_lazd90 <- function(abcd_data_sim){
-    
-    lazd90 <- -0.4213183637 +
-        0.0079037187 * abcd_data_sim$dy1_scrn_diardays +
-        0.1150761291 * I(abcd_data_sim$site == "Kenya") +
-        -0.0539769251 * I(abcd_data_sim$site == "Malawi") +
-        0.0788648620 * I(abcd_data_sim$site == "Mali") +
-        -0.0250071035 * I(abcd_data_sim$site == "India") +
-        -0.1211349999 * I(abcd_data_sim$site == "Tanzania") +
-        -0.0058588270 * I(abcd_data_sim$site == "Pakistan") +
-        -0.0626945585 * I(abcd_data_sim$an_ses_quintile == "2nd quintile of SES") +
-        -0.0246203478 * I(abcd_data_sim$an_ses_quintile == "3rd quintile of SES") +
-        0.0214125476 * I(abcd_data_sim$an_ses_quintile == "4th quintile of SES") +
-        0.0517797108  * I(abcd_data_sim$an_ses_quintile == "5th quintile of SES") +
-        -0.0001681260 * abcd_data_sim$agemchild + 
-        0.8384232165 * abcd_data_sim$lfazscore + 
-        -0.0763975679 * I(abcd_data_sim$shigella_new > 0) + 
-        0.1940622 * I(I(abcd_data_sim$shigella_new > 0) * abcd_data_sim$an_grp_01) +
-        -0.007401625 * I(I(abcd_data_sim$shigella_new > 0) * abcd_data_sim$lfazscore * abcd_data_sim$an_grp_01) + 
-        -0.0025 * I(I(abcd_data_sim$shigella_new > 0) * abcd_data_sim$lfazscore * abcd_data_sim$agemchild * abcd_data_sim$an_grp_01)
-
-  lazd90 <- lazd90 + rnorm(length(lazd90), 0, 0.5644183)
-  
-  # add 4% missing at random
-  prop_miss <- 0.04
-  delta <- rbinom(n = nrow(abcd_data_sim), size = 1, prob = prop_miss)
-  
-  # add missingness corresponding to delta
-  lazd90 <- ifelse(delta == 0, lazd90, NA)
-  
-  abcd_data_sim$lazd90 <- lazd90
-  
-  return(abcd_data_sim)
-    
-}
-
-## Added 5/27/26 to address reviewer comments regarding MCAR/MAR
-#' Function to generate lazd90 based on formatted ABCD simulation dataset
-#'
-#' @param abcd_sim dataset of simulated abcd data
-#' @param mcar_prop numeric proportion of data missing completely at random
-#'
-#' @returns dataset of size nrow(abcd_data_sim) with added lazd90 outcome variable
-generate_lazd90_mcar <- function(abcd_data_sim, mcar_prop = 0.04){
-  
-  lazd90 <- -0.4213183637 +
+#' @returns vector of E[Y(a) | W]
+lazd90_Aa <- function(abcd_data_sim, a){
+  -0.4213183637 +
     0.0079037187 * abcd_data_sim$dy1_scrn_diardays +
     0.1150761291 * I(abcd_data_sim$site == "Kenya") +
     -0.0539769251 * I(abcd_data_sim$site == "Malawi") +
@@ -332,69 +289,83 @@ generate_lazd90_mcar <- function(abcd_data_sim, mcar_prop = 0.04){
     -0.0001681260 * abcd_data_sim$agemchild + 
     0.8384232165 * abcd_data_sim$lfazscore + 
     -0.0763975679 * I(abcd_data_sim$shigella_new > 0) + 
-    0.1940622 * I(I(abcd_data_sim$shigella_new > 0) * abcd_data_sim$an_grp_01) +
-    -0.007401625 * I(I(abcd_data_sim$shigella_new > 0) * abcd_data_sim$lfazscore * abcd_data_sim$an_grp_01) + 
-    -0.0025 * I(I(abcd_data_sim$shigella_new > 0) * abcd_data_sim$lfazscore * abcd_data_sim$agemchild * abcd_data_sim$an_grp_01)
-  
-  lazd90 <- lazd90 + rnorm(length(lazd90), 0, 0.5644183)
-  
-  # add mcar_prop % missing at random
-  delta <- rbinom(n = nrow(abcd_data_sim), size = 1, prob = mcar_prop)
-  
-  # add missingness corresponding to delta
-  lazd90 <- ifelse(delta == 0, lazd90, NA)
-  
-  abcd_data_sim$lazd90 <- lazd90
-  
-  return(abcd_data_sim)
-  
+    0.1940622 * I(I(abcd_data_sim$shigella_new > 0) * a) +
+    -0.007401625 * I(I(abcd_data_sim$shigella_new > 0) * abcd_data_sim$lfazscore * a) + 
+    -0.0025 * I(I(abcd_data_sim$shigella_new > 0) * abcd_data_sim$lfazscore * abcd_data_sim$agemchild * a)
 }
 
-## Added 5/27/26 to address reviewer comments regarding MCAR/MAR
 #' Function to generate lazd90 based on formatted ABCD simulation dataset
-#' Missing dependent on site - proportion missing related to empirical proportion missing at given site 
 #'
 #' @param abcd_sim dataset of simulated abcd data
 #'
 #' @returns dataset of size nrow(abcd_data_sim) with added lazd90 outcome variable
-generate_lazd90_mar <- function(abcd_data_sim){
+generate_lazd90 <- function(abcd_data_sim, 
+                            mar = FALSE, 
+                            mcar = TRUE, 
+                            mcar_prop = 0.04, 
+                            potential_outcomes = FALSE){
+    
+  n <- nrow(abcd_data_sim)
   
-  lazd90 <- -0.4213183637 +
-    0.0079037187 * abcd_data_sim$dy1_scrn_diardays +
-    0.1150761291 * I(abcd_data_sim$site == "Kenya") +
-    -0.0539769251 * I(abcd_data_sim$site == "Malawi") +
-    0.0788648620 * I(abcd_data_sim$site == "Mali") +
-    -0.0250071035 * I(abcd_data_sim$site == "India") +
-    -0.1211349999 * I(abcd_data_sim$site == "Tanzania") +
-    -0.0058588270 * I(abcd_data_sim$site == "Pakistan") +
-    -0.0626945585 * I(abcd_data_sim$an_ses_quintile == "2nd quintile of SES") +
-    -0.0246203478 * I(abcd_data_sim$an_ses_quintile == "3rd quintile of SES") +
-    0.0214125476 * I(abcd_data_sim$an_ses_quintile == "4th quintile of SES") +
-    0.0517797108  * I(abcd_data_sim$an_ses_quintile == "5th quintile of SES") +
-    -0.0001681260 * abcd_data_sim$agemchild + 
-    0.8384232165 * abcd_data_sim$lfazscore + 
-    -0.0763975679 * I(abcd_data_sim$shigella_new > 0) + 
-    0.1940622 * I(I(abcd_data_sim$shigella_new > 0) * abcd_data_sim$an_grp_01) +
-    -0.007401625 * I(I(abcd_data_sim$shigella_new > 0) * abcd_data_sim$lfazscore * abcd_data_sim$an_grp_01) + 
-    -0.0025 * I(I(abcd_data_sim$shigella_new > 0) * abcd_data_sim$lfazscore * abcd_data_sim$agemchild * abcd_data_sim$an_grp_01)
+  # simulate potential outcomes
+  mu0 <- lazd90_Aa(abcd_data_sim, a = 0)
+  mu1 <- lazd90_Aa(abcd_data_sim, a = 1)
   
-  lazd90 <- lazd90 + rnorm(length(lazd90), 0, 0.5644183)
+  # add noise, same for both potential outcomes
+  eps <- rnorm(n, 0, 0.5644183)
+  Y0 <- mu0 + eps
+  Y1 <- mu1 + eps
   
-  # add missingness wrt empirical proportion missing at a given site
-  mar_prop <- data.frame(site = c("Bangladesh", "Kenya", "Malawi", "Mali", "India", "Tanzania", "Pakistan"),
-                         mar_prop = c(0.01, 0.03, 0.16, 0.01, 0.03, 0.05, 0.03))
-  
-  abcd_data_sim$lazd90 <- lazd90
-  
-  for(i in 1:nrow(mar_prop)){
-    site_idx <- which(abcd_data_sim$site == mar_prop[i, "site"])
-    delta <- rbinom(n = length(site_idx), size = 1, prob = mar_prop[i, "mar_prop"])
-    abcd_data_sim$lazd90[site_idx] <- ifelse(delta == 0, abcd_data_sim$lazd90[site_idx], NA)
+  # observed outcome before any missingness
+  lazd90_full <- ifelse(abcd_data_sim$an_grp_01 == 1, Y1, Y0)
+
+  # Missingness indicator: 1 = missing, 0 = observed
+  if (mcar & !mar) {
+    
+    # default/original = 4%
+    delta <- rbinom(n = n, size = 1, prob = mcar_prop)
+    
+  } else if (mar & !mcar) {
+    
+    delta <- rep(0, n)
+    
+    mar_prop <- data.frame(
+      site = c("Bangladesh", "Kenya", "Malawi", "Mali",
+               "India", "Tanzania", "Pakistan"),
+      mar_prop = c(0.01, 0.03, 0.16, 0.01, 0.03, 0.05, 0.03)
+    )
+    
+    for (i in 1:nrow(mar_prop)) {
+      site_idx <- which(abcd_data_sim$site == mar_prop[i, "site"])
+      delta[site_idx] <- rbinom(
+        n = length(site_idx),
+        size = 1,
+        prob = mar_prop[i, "mar_prop"]
+      )
+    }
+  } else{
+    stop("must be MAR or MCAR, not both")
   }
   
-  return(abcd_data_sim)
+  # Observed outcome after missingness
+  lazd90_obs <- ifelse(delta == 0, lazd90_full, NA)
   
+  # if returning potential outcomes for data adaptive truth 
+  if(potential_outcomes){
+    abcd_data_sim$lazd90_mu0 <- mu0
+    abcd_data_sim$lazd90_mu1 <- mu1
+    abcd_data_sim$lazd90_Y0 <- Y0
+    abcd_data_sim$lazd90_Y1 <- Y1
+    abcd_data_sim$lazd90_full <- lazd90_full
+    abcd_data_sim$lazd90_missing <- delta
+  }
+  
+  abcd_data_sim$lazd90 <- lazd90_obs
+  
+  return(abcd_data_sim)
+    
 }
+
 
 # -------------------------------- Formatting Function ------------------------------------------
 
@@ -449,9 +420,10 @@ format_factors <- function(abcd_data){
 #' @param mar_sens sensitivity analysis for missing at random, default FALSE
 #' @param mcar_sens sensitivity analysis for increaseing proportion of missing completely at random, default FALSE
 #' @param mcar_prop proportion of missing outcome for MCAR sensitivity analysis sim, default 4% in line with main analysis
+#' @param potential_outcomes boolean generate potential outcomes or observed outcomes, default FALSE for observed outcomes
 #'
 #' @returns dataset of size n
-generate_abcd <- function(n, mar_sens = FALSE, mcar_sens = FALSE, mcar_prop = 0.04){
+generate_abcd <- function(n, mar_sens = FALSE, mcar_sens = FALSE, mcar_prop = 0.04, potential_outcomes = FALSE){
   pathogen_df <- pathogen_quantity(n)
   illness_df <- illness_char(n)
   sociodem_df <- sociodemographic_char(n)
@@ -467,15 +439,40 @@ generate_abcd <- function(n, mar_sens = FALSE, mcar_sens = FALSE, mcar_prop = 0.
                      malnutrition_df)
 
   abcd_data <- format_factors(abcd_data)
-  # main/default simulations
-  if(!mar_sens & !mcar_sens){
-    abcd_data <- generate_lazd90(abcd_data)
-  } else if(mar_sens & !mcar_sens){
-    abcd_data <- generate_lazd90_mar(abcd_data)
-  } else if(!mar_sens & mcar_sens){
-    abcd_data <- generate_lazd90_mcar(abcd_data, mcar_prop = mcar_prop)
-  } else{
-    stop("specify mar_sens = TRUE or mcar_sens = TRUE, not both")
+  
+  if (!mar_sens & !mcar_sens) {
+    
+    # Main/default simulation: 4% MCAR
+    abcd_data <- generate_lazd90(
+      abcd_data_sim = abcd_data,
+      mcar = TRUE,
+      mar = FALSE,
+      mcar_prop = 0.04,
+      potential_outcomes = potential_outcomes
+    )
+    
+  } else if (mar_sens & !mcar_sens) {
+    
+    abcd_data <- generate_lazd90(
+      abcd_data_sim = abcd_data,
+      mar = TRUE,
+      mcar = FALSE,
+      mcar_prop = mcar_prop,
+      potential_outcomes = potential_outcomes
+    )
+    
+  } else if (!mar_sens & mcar_sens) {
+    
+    abcd_data <- generate_lazd90(
+      abcd_data_sim = abcd_data,
+      mcar = TRUE,
+      mar = FALSE,
+      mcar_prop = mcar_prop,
+      potential_outcomes = potential_outcomes
+    )
+    
+  } else {
+    stop("Specify mar_sens = TRUE or mcar_sens = TRUE, not both.")
   }
   
   return(data.frame(abcd_data))
