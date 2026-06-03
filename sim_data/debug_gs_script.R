@@ -122,7 +122,8 @@ saveRDS(results_gold_standard$results, file = paste0("/projects/dbenkes/allison/
 
 set.seed(12345)
 
-abcd_data_sim <- generate_abcd(1e5)
+# abcd_data_sim <- generate_abcd(1e5)
+abcd_data_sim <- generate_abcd(5e5) # increase to see if this helps?? 
 
 # predict function for avgSuperLearner, not sure why it wasn't finding it in drotr utils.R?? just copied over
 predict.avgSuperLearner <- function(x, newdata, ...){
