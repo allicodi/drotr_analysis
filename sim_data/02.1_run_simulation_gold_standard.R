@@ -12,10 +12,14 @@ source("01_wrappers.R")
 # ------------------------------  Set seed ---------------------------------
 
 seed <- Sys.getenv("SLURM_ARRAY_TASK_ID")
+seed <- as.numeric(seed)
 set.seed(seed)
 
 # size of ABCD dataset
 n <- 6692
+
+# outer cross validation folds, default 10
+k_folds <- 10
 
 # ---------------- Data Generation & Model Specification -------------------
 
@@ -66,25 +70,40 @@ threshold_list <- c(0.05, 0.15, 0.25, 0.35)
 
 # ------------------------- Fit nuisance model and save -------------------------
 
-nuisance_output <- readRDS(file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_sim_data/nuisance/nuisance_n_", n, "_seed_", seed, ".Rds"))
+# if file exists, read it, otherwise learn nuisance. only save first 10 seeds for debugging sake
+nuisance_file <- paste0(
+  "/projects/dbenkes/allison/drotr_sim/journal/results_sim_data/nuisance/",
+  "nuisance_n_", n, "_seed_", seed, ".Rds"
+)
 
-# nuisance_output <- learn_nuisance(df = abcd_data,
-#                                  id_name = "pid",
-#                                  Y_name = "lazd90",
-#                                  A_name = "an_grp_01",
-#                                  W_list = W_list,
-#                                  sl.library.outcome = sl.library.outcome,
-#                                  sl.library.treatment = sl.library.treatment,
-#                                  sl.library.missingness = sl.library.missingness,
-#                                  outcome_type = "gaussian",
-#                                  k_folds = 10,
-#                                  ps_trunc_level = 0.01)
+if (file.exists(nuisance_file)) {
+  nuisance_output <- readRDS(nuisance_file)
+} else{
+    
+    nuisance_output <- learn_nuisance(
+      df = abcd_data,
+      id_name = "pid",
+      Y_name = "lazd90",
+      A_name = "an_grp_01",
+      W_list = W_list,
+      sl.library.outcome = sl.library.outcome,
+      sl.library.treatment = sl.library.treatment,
+      sl.library.missingness = sl.library.missingness,
+      outcome_type = "gaussian",
+      k_folds = k_folds,
+      ps_trunc_level = 0.01
+    )
+    
+    # only save nuisance models for the first 10 seeds
+    if (seed <= 10) {
+      saveRDS(nuisance_output, file = nuisance_file)
+    }
+  
+}
 
 nuisance_models <- nuisance_output$nuisance_models
 k_fold_assign_and_CATE <- nuisance_output$k_fold_assign_and_CATE
 validRows <- nuisance_output$validRows
-
-# saveRDS(nuisance_output, file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_sim_data/nuisance/nuisance_n_", n, "_seed_", seed, ".Rds"))
 
 # ------------------------- Rule based on all-information ----------------------------
 
@@ -99,11 +118,157 @@ results_gold_standard <- estimate_OTR(df = abcd_data,
                                     k_fold_assign_and_CATE = k_fold_assign_and_CATE,
                                     validRows = validRows,
                                     threshold = threshold_list,
-                                    k_folds = 10,
+                                    k_folds = k_folds,
                                     ps_trunc_level = 0.01,
                                     outcome_type = "gaussian")
 
 print(results_gold_standard)
 
-saveRDS(results_gold_standard, file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_sim_data/results_object/gold_standard/full_results_n_",n,"_seed_", seed, ".Rds"))
+# only save CATE models for the first 10 seeds for debugging
+if (seed <= 10) {
+  saveRDS(results_gold_standard, file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_sim_data/results_object/gold_standard/full_results_n_",n,"_seed_", seed, ".Rds"))
+}
+
+# save results portion for all models
 saveRDS(results_gold_standard$results, file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_sim_data/results_object/gold_standard/results_n_",n,"_seed_", seed, ".Rds"))
+
+# ------------------------- Data adaptive truth generation ---------------------
+
+set.seed(12345) # set same seed for each predictive dataset
+abcd_data_sim <- generate_abcd(n = 1e5, potential_outcomes = TRUE) 
+
+# predict function for avgSuperLearner, not sure why it wasn't finding it in drotr utils.R?? just copied over
+predict.avgSuperLearner <- function(x, newdata, ...){
+  V <- length(x)
+  pred_list <- lapply(x, predict, newdata = newdata)
+  pred_list_sl <- lapply(pred_list, "[[", 1)
+  avg_pred <- as.numeric(
+    Reduce("+", pred_list_sl) / V
+  )
+  return(avg_pred)
+}
+
+# ---- Gold Standard ----
+
+# dataframe of just columns in gold standard rule in large sim dataset for computing truth
+Z_gs <- abcd_data_sim[, Z_list_gold_standard, drop = FALSE]
+
+CATE_models <- results_gold_standard$CATE_models
+
+# empty dataframe to hold truth for each fold
+k_truth <- data.frame()
+
+thresholds <- threshold_list
+
+# for each of the k = 10 CATE models:
+for(i in 1:length(CATE_models)){
+  
+  model <- CATE_models[[i]]
+  
+  # predict using model for a given fold on big dataset
+  abcd_data_sim$pred_CATE <- stats::predict(model, newdata = Z_gs, type = 'response')
+  
+  # iterate over each of the five thresholds
+  for(t in 1:length(thresholds)){
+    threshold <- thresholds[t]
+    
+    # check if the given model had non-NA predictions at the given threshold
+    k_non_na <- results_gold_standard$results[[t]]$k_non_na
+    if(!(i %in% k_non_na)) next;
+    
+    # get decisions for the kth model using threshold t
+    abcd_data_sim$dZ_gs <- ifelse(abcd_data_sim$pred_CATE > threshold, 1, 0)
+    
+    # get dataframe of just treated people
+    abcd_data_sim_treated_gs <- abcd_data_sim[which(abcd_data_sim$dZ_gs == 1),]
+    
+    # get dataframe of just untreated people
+    abcd_data_sim_untreated_gs <- abcd_data_sim[which(abcd_data_sim$dZ_gs == 0),]
+    
+    # E[Y(1) | d(Z) = 1]
+    EY_A1_dZ1_gs <- mean(abcd_data_sim_treated_gs$lazd90_mu1, na.rm=TRUE) #na.rm = true for extreme cases when everyone or nobody treated
+  
+    # E[Y(0) | d(Z) = 1] 
+    EY_A0_dZ1_gs <- mean(abcd_data_sim_treated_gs$lazd90_mu0, na.rm=TRUE) #na.rm = true for extreme cases when everyone or nobody treated
+    
+    # E[Y(1) | d(Z) = 0] 
+    EY_A1_dZ0_gs <- mean(abcd_data_sim_untreated_gs$lazd90_mu1, na.rm=TRUE) #na.rm = true for extreme cases when everyone or nobody treated
+    
+    # E[Y(0) | d(Z) = 0] 
+    EY_A0_dZ0_gs <- mean(abcd_data_sim_untreated_gs$lazd90_mu0, na.rm=TRUE) #na.rm = true for extreme cases when everyone or nobody treated
+    
+    # E[d(Z) = 1] 
+    E_dZ1_gs <- mean(abcd_data_sim$dZ_gs)
+    
+    # E[Y(1) - Y(0) | d(Z) = 1] 
+    subgroup_effect_treated_gs <- EY_A1_dZ1_gs - EY_A0_dZ1_gs
+    
+    # E[Y(1) - Y(0) | d(Z) = 1] 
+    subgroup_effect_untreated_gs <- EY_A1_dZ0_gs - EY_A0_dZ0_gs
+    
+    # E[Y(d) - Y(0)] = E[Y(d) - Y(0) | d(Z) = 1] * E[d(Z) = 1] 
+    treatment_effect_gs <- (EY_A1_dZ1_gs - EY_A0_dZ1_gs)*E_dZ1_gs
+    
+    # E[Y(1) - Y(0) | d(Z) = 1] - E[Y(1) - Y(0) | d(Z) = 0] 
+    subgroup_difference_gs <- subgroup_effect_treated_gs - subgroup_effect_untreated_gs
+    
+    # rbind truths for given k-th model t-th threshold combo into dataframe
+    k_truth <- rbind(k_truth, data.frame(
+      threshold = threshold,
+      EY_A1_dZ1_gs = EY_A1_dZ1_gs,
+      EY_A0_dZ1_gs = EY_A0_dZ1_gs,
+      E_dZ1_gs = E_dZ1_gs,
+      subgroup_effect_treated_gs = subgroup_effect_treated_gs,
+      subgroup_effect_untreated_gs = subgroup_effect_untreated_gs,
+      treatment_effect_gs = treatment_effect_gs,
+      subgroup_difference_gs = subgroup_difference_gs
+    ))
+  }
+}
+
+# once we've iterated over all the model + threshold combos, get average for each threshold over the ten folds
+
+# dataframe to hold average across folds
+mean_over_folds <- data.frame()
+
+# vector to hold the SE we added for testing
+se_E_dZ1_gs <- vector(mode = "numeric", length = length(thresholds))
+
+# for each threshold, average the results
+for(i in 1:length(thresholds)){
+  t <- thresholds[i]
+  
+  # subset to k=10 results associated with threshold t
+  threshold_df <- k_truth[k_truth$threshold == t, ]
+  
+  # take the average of each column
+  mean_over_folds <- rbind(mean_over_folds, colMeans(threshold_df, na.rm=TRUE))
+  
+  # get standard error to build additional CI for E(d(Z) == 1)
+  se_E_dZ1_gs[i] <- sqrt(mean(threshold_df$E_dZ1_gs * (1 - threshold_df$E_dZ1_gs)) / 6692)
+}
+
+# add names back to columns, colMeans got rid of names
+colnames(mean_over_folds) <- colnames(k_truth)
+
+# add in new SE column
+mean_over_folds <- cbind(mean_over_folds, se_E_dZ1_gs)
+
+# this is silly idk why i didn't just add seed to existing mean_over_folds but oh well 
+truth_by_seed <- data.frame(
+  seed = seed,
+  folds = k_folds, 
+  threshold = mean_over_folds['threshold'],
+  EY_A1_dZ1_gs = mean_over_folds['EY_A1_dZ1_gs'],
+  EY_A0_dZ1_gs = mean_over_folds['EY_A0_dZ1_gs'],
+  E_dZ1_gs = mean_over_folds['E_dZ1_gs'],
+  E_dZ1_gs_se = mean_over_folds['se_E_dZ1_gs'],
+  subgroup_effect_treated_gs = mean_over_folds['subgroup_effect_treated_gs'],
+  subgroup_effect_untreated_gs = mean_over_folds['subgroup_effect_untreated_gs'],
+  treatment_effect_gs =  mean_over_folds['treatment_effect_gs'],
+  subgroup_difference_gs = mean_over_folds['subgroup_difference_gs']
+)
+
+# save overall dataframe with truths for given seed
+write.csv(truth_by_seed, file=paste0("results_csv/gs_data_adaptive_truth_n_", n, "_folds_", k_folds, "_seed_", seed, ".csv"), row.names=FALSE)
+
