@@ -14,7 +14,7 @@ t <- 0.05
 results <- data.frame()
 
 for(file in file_list_gs){
-  if(file.info(file)$mtime > as.POSIXct("2024-09-28")){
+  if(file.info(file)$mtime > as.POSIXct("2026-06-04")){
     results_gs <- readRDS(file)
     seed <- str_extract(basename(file), "(?<=results_n_6692_seed_)\\d+")
     
