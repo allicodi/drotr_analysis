@@ -17,7 +17,7 @@ combined_data_gs <- data.table()
 # for every file in the list, check and make sure timestamp is past a certain point 
 # (to make sure im not adding old results if i changed something)
 for(file in file_list_gs){
-  if(file.info(file)$mtime > as.POSIXct("2024-09-19")){
+  if(file.info(file)$mtime > as.POSIXct("2026-06-04")){
     
     #read in results and rbind into combined_data_gs which will hold all of the results from every seed
     data <- fread(file)
@@ -33,7 +33,7 @@ write.csv(combined_data_gs, file="truth/gs_data_adaptive_truth_by_seed.csv", row
 combined_data_host <- data.table()
 
 for(file in file_list_host){
-  if(file.info(file)$mtime > as.POSIXct("2024-10-02")){
+  if(file.info(file)$mtime > as.POSIXct("2026-06-04")){
     data <- fread(file)
     combined_data_host <- rbindlist(list(combined_data_host, data))
   }

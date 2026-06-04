@@ -4,12 +4,10 @@ library(dplyr)
 library(kableExtra)
 
 # read in data adaptive truth by seed file
-# gs_data_adaptive_truth_df <- read.csv("truth/gs_data_adaptive_truth_by_seed.csv")
-gs_data_adaptive_truth_df <- read.csv("truth/debug_gs_data_adaptive_truth_by_seed.csv")
+gs_data_adaptive_truth_df <- read.csv("truth/gs_data_adaptive_truth_by_seed.csv")
 host_data_adaptive_truth_df <- read.csv("truth/host_data_adaptive_truth_by_seed.csv")
 
 # read simulation results
-# gs_results_df <- read.csv("results_csv/gold_standard_n_6692.csv")
 gs_results_df <- read.csv("results_csv/debug_gold_standard_n_6692.csv")
 host_results_df <- read.csv("results_csv/host_n_6692.csv")
 

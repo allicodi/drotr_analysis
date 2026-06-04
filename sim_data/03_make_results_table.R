@@ -14,7 +14,7 @@ file_list_host <- list.files(dir_host, pattern="^results_n_6692_", full.names=TR
 combined_data_gs <- data.table()
 
 for(file in file_list_gs){
-    if(file.info(file)$mtime > as.POSIXct("2024-09-19")){
+    if(file.info(file)$mtime > as.POSIXct("2026-06-04")){
         data <- readRDS(file)
         seed <- str_extract(basename(file), "(?<=results_n_6692_seed_)\\d+")
         
@@ -33,7 +33,7 @@ write.csv(combined_data_gs, file="results_csv/gold_standard_n_6692.csv", row.nam
 combined_data_host <- data.table()
 
 for(file in file_list_host){
-    if(file.info(file)$mtime > as.POSIXct("2024-09-19")){
+    if(file.info(file)$mtime > as.POSIXct("2026-06-04")){
       data <- readRDS(file)
       seed <- str_extract(basename(file), "(?<=results_n_6692_seed_)\\d+")
       
