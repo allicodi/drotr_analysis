@@ -1,5 +1,5 @@
 PARTITION=$1
-NSEEDS=5
+NSEEDS=$2
 
 sbatch --array=1-$NSEEDS \
        --partition=$PARTITION \
