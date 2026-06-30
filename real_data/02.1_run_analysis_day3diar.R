@@ -60,8 +60,8 @@ CATE_library_gs <- c("SL.earth",
                      "SL.xgboost",
                      "SL.cate.shig.glm",
                      "SL.cate.rota.glm",
-                     "SL.cate.path",     # ADDED 11/20/24 realized it was missing :,(
-                     "SL.cate.path2",    # ADDED 11/20/24 realized it was missing :,(
+                     "SL.cate.path",     
+                     "SL.cate.path2",    
                      "SL.cate.clin",
                      "SL.cate.clin2",
                      "SL.cate.pathclin",
@@ -70,8 +70,6 @@ CATE_library_gs <- c("SL.earth",
                      "SL.cate.host2",
                      "SL.cate.all",
                      "SL.cate.all2")
-
-# UGGHHHH just realized this does not have SL.cate.path and SL.cate.path2
 
 # Uses all available data and is considered the best-informed rule 
 Z_list_host <- c("avemuac", "wfazscore", "wflzscore", 
