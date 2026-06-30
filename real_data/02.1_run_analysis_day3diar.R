@@ -115,13 +115,13 @@ nuisance_output <- learn_nuisance(df = abcd_data,
                                   k_folds = 10,
                                   ps_trunc_level = 0.01)
 
-#nuisance_output <- readRDS(file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_real_data/nuisance/nuisance_day3diar_seed_", seed, ".Rds"))
+# nuisance_output <- readRDS(file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_real_data/nuisance/nuisance_day3diar_seed_", seed, ".Rds"))
 
 nuisance_models <- nuisance_output$nuisance_models
 k_fold_assign_and_CATE <- nuisance_output$k_fold_assign_and_CATE
 validRows <- nuisance_output$validRows
 
-saveRDS(nuisance_output, file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_real_data/nuisance/nuisance_day3diar_seed_", seed, ".Rds"))
+# saveRDS(nuisance_output, file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_real_data/nuisance/nuisance_day3diar_seed_", seed, ".Rds"))
 
 # ------------------------- Rule based on gold standard ----------------------------
 
@@ -167,21 +167,21 @@ saveRDS(results_host$results, file = paste0("/projects/dbenkes/allison/drotr_sim
 
 # ------------------------- Rule based on pathogen quantities ----------------------------
 
-results_path <- estimate_OTR(df = abcd_data,
-                             Y_name = "day3diar",
-                             A_name = "an_grp_01",
-                             Z_list = Z_list_pathogen_q,
-                             W_list= W_list,
-                             id_name = "pid",
-                             sl.library.CATE = CATE_library_pathogen_q,
-                             nuisance_models = nuisance_models,
-                             k_fold_assign_and_CATE = k_fold_assign_and_CATE,
-                             validRows = validRows,
-                             threshold = threshold_list,
-                             k_folds = 10,
-                             ps_trunc_level = 0.01,
-                             outcome_type = "binomial")
-
-print(results_path)
-
-saveRDS(results_path$results, file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_real_data/results/pathogen/results_day3diar_pathogen_seed_", seed, ".Rds"))
+# results_path <- estimate_OTR(df = abcd_data,
+#                              Y_name = "day3diar",
+#                              A_name = "an_grp_01",
+#                              Z_list = Z_list_pathogen_q,
+#                              W_list= W_list,
+#                              id_name = "pid",
+#                              sl.library.CATE = CATE_library_pathogen_q,
+#                              nuisance_models = nuisance_models,
+#                              k_fold_assign_and_CATE = k_fold_assign_and_CATE,
+#                              validRows = validRows,
+#                              threshold = threshold_list,
+#                              k_folds = 10,
+#                              ps_trunc_level = 0.01,
+#                              outcome_type = "binomial")
+# 
+# print(results_path)
+# 
+# saveRDS(results_path$results, file = paste0("/projects/dbenkes/allison/drotr_sim/journal/results_real_data/results/pathogen/results_day3diar_pathogen_seed_", seed, ".Rds"))
