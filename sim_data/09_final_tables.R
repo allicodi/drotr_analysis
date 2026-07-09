@@ -21,6 +21,7 @@ host_results_df <- read.csv("results_csv/host_n_6692.csv")
 # Host - 0.05, 0.075
 # Gold standard - 0.05, 0.25
 t_list <- c(0.05, 0.075, 0.25)
+#t_list <- c(0.05, 0.15, 0.25, 0.35)
 
 da_results_tbl <- vector("list", length = length(t_list))
 results_tbl <- vector("list", length = length(t_list))
@@ -55,8 +56,8 @@ get_results_table <- function(t, truth_df_gs, truth_df_host, gs_results_df, host
   }
   
   # Filter based on threshold
-  true_threshold_gs_df <- truth_df_gs[truth_df_gs$t_list == t,]
-  true_threshold_host_df <- truth_df_host[truth_df_host$t_list == t,]
+  true_threshold_gs_df <- truth_df_gs[truth_df_gs$threshold == t,]
+  true_threshold_host_df <- truth_df_host[truth_df_host$threshold == t,]
   gs_threshold_df <- gs_results_df[gs_results_df$threshold == t,]
   host_threshold_df <- host_results_df[host_results_df$threshold == t,]
   
@@ -541,9 +542,9 @@ coverage <- vector("numeric", length = 3)
 for(i in 1:3){
   sub_df <- compare_results[compare_results$type == type[i],]
   
-  bias[i] <- mean(compare_results$expected_val_of_comparison - optimal_truth[1,3+i])
+  bias[i] <- mean(sub_df$expected_val_of_comparison - optimal_truth[1,1+i])
   
-  coverage_vec <- ifelse(compare_results$lower_ci < optimal_truth[1,3+i] & compare_results$upper_ci > optimal_truth[1,3+i], 1, 0)
+  coverage_vec <- ifelse(compare_results$lower_ci < optimal_truth[1,1+i] & compare_results$upper_ci > optimal_truth[1,1+i], 1, 0)
   coverage[i] <- mean(coverage_vec)
 }
 
@@ -587,3 +588,183 @@ for(seed in 1:1000){
 da_results_comparison <- data.frame(type = type,
                                     bias = c(mean(bias_atrt_da, na.rm=TRUE), mean(bias_atnrt_da, na.rm = TRUE), mean(bias_atr_da, na.rm = TRUE)),
                                     coverage = c(mean(coverage_atrt_da, na.rm = TRUE), mean(coverage_atnrt_da, na.rm = TRUE), mean(coverage_atr_da, na.rm = TRUE)))
+
+#####################
+
+# Supplementary tables 
+
+# Gold standard / comprehensive supplement table
+idx <- which(t_list %in% c(0.05, 0.15, 0.25, 0.35))
+
+final_results_gs <- data.frame(
+  `Effect Estimate` = c(
+    "$E[Y(1) | d(Z) = 1]$",
+    "$E[Y(1) | d(Z) = 1]$",
+    "$E[Y(0) | d(Z) = 1]$",
+    "$E[Y(0) | d(Z) = 1]$",
+    "$E[d(Z) = 1]$",
+    "$E[d(Z) = 1]$",
+    "$E[Y(1) - Y(0) | d(Z) = 1]$",
+    "$E[Y(1) - Y(0) | d(Z) = 1]$",
+    "$E[Y(1) - Y(0) | d(Z) = 0]$",
+    "$E[Y(1) - Y(0) | d(Z) = 0]$",
+    "$E[Y(d) - Y(0)]$",
+    "$E[Y(d) - Y(0)]$",
+    "$E[Y(1) - Y(0) | d(Z) = 1] - E[Y(1) - Y(0) | d(Z) = 0]$",
+    "$E[Y(1) - Y(0) | d(Z) = 1] - E[Y(1) - Y(0) | d(Z) = 0]$"
+  ),
+  `Performance Metric` = rep(c("Bias", "95% CI Coverage"), 7),
+  check.names = FALSE
+)
+
+for (i in idx) {
+  
+  optimal <- results_tbl[[i]]
+  optimal$type <- "Optimal"
+  
+  da <- da_results_tbl[[i]]
+  da$type <- "Data Adaptive"
+  
+  results <- rbind(optimal, da)
+  
+  pivoted_results <- results %>%
+    pivot_wider(
+      names_from = type,
+      values_from = c(`Gold Standard Rule`, `Host Rule`),
+      names_glue = "{.value} {type}"
+    )
+  
+  final_results <- pivoted_results[, c(
+    "Effect Estimate",
+    "Performance Metric",
+    "Gold Standard Rule Optimal",
+    "Gold Standard Rule Data Adaptive"
+  )]
+  
+  colnames(final_results) <- c(
+    "Effect Estimate",
+    "Performance Metric",
+    paste0("Optimal: t = ", t_list[i]),
+    paste0("Data Adaptive: t = ", t_list[i])
+  )
+  
+  final_results_gs <- cbind(
+    final_results_gs,
+    final_results[, c(
+      paste0("Optimal: t = ", t_list[i]),
+      paste0("Data Adaptive: t = ", t_list[i])
+    )]
+  )
+}
+
+colnames(final_results_gs) <- c(
+  "Effect Estimate",
+  "Performance Metric",
+  rep(c("Optimal", "Data Adaptive"), 4)
+)
+
+table <- kbl(
+  final_results_gs,
+  format = "html",
+  caption = "Simulation results for comprehensive rule (n = 6692, replicates = 1000)",
+  booktabs = TRUE,
+  digits = 5
+) %>%
+  kable_styling(latex_options = "striped") %>%
+  column_spec(1, bold = TRUE, background = NULL) %>%
+  collapse_rows(columns = 1:2, latex_hline = "major", row_group_label_position = "first") %>%
+  add_header_above(c(" " = 2,
+                     "t = 0.05" = 2,
+                     "t = 0.15" = 2,
+                     "t = 0.25" = 2,
+                     "t = 0.35" = 2))
+
+print(table)
+
+# Host supplement table
+idx <- which(t_list %in% c(0.025, 0.05, 0.075, 0.10))
+
+final_results_host <- data.frame(
+  `Effect Estimate` = c(
+    "$E[Y(1) | d(Z) = 1]$",
+    "$E[Y(1) | d(Z) = 1]$",
+    "$E[Y(0) | d(Z) = 1]$",
+    "$E[Y(0) | d(Z) = 1]$",
+    "$E[d(Z) = 1]$",
+    "$E[d(Z) = 1]$",
+    "$E[Y(1) - Y(0) | d(Z) = 1]$",
+    "$E[Y(1) - Y(0) | d(Z) = 1]$",
+    "$E[Y(1) - Y(0) | d(Z) = 0]$",
+    "$E[Y(1) - Y(0) | d(Z) = 0]$",
+    "$E[Y(d) - Y(0)]$",
+    "$E[Y(d) - Y(0)]$",
+    "$E[Y(1) - Y(0) | d(Z) = 1] - E[Y(1) - Y(0) | d(Z) = 0]$",
+    "$E[Y(1) - Y(0) | d(Z) = 1] - E[Y(1) - Y(0) | d(Z) = 0]$"
+  ),
+  `Performance Metric` = rep(c("Bias", "95% CI Coverage"), 7),
+  check.names = FALSE
+)
+
+for (i in idx) {
+  
+  optimal <- results_tbl[[i]]
+  optimal$type <- "Optimal"
+  
+  da <- da_results_tbl[[i]]
+  da$type <- "Data Adaptive"
+  
+  results <- rbind(optimal, da)
+  
+  pivoted_results <- results %>%
+    pivot_wider(
+      names_from = type,
+      values_from = c(`Gold Standard Rule`, `Host Rule`),
+      names_glue = "{.value} {type}"
+    )
+  
+  final_results <- pivoted_results[, c(
+    "Effect Estimate",
+    "Performance Metric",
+    "Host Rule Optimal",
+    "Host Rule Data Adaptive"
+  )]
+  
+  colnames(final_results) <- c(
+    "Effect Estimate",
+    "Performance Metric",
+    paste0("Optimal: t = ", t_list[i]),
+    paste0("Data Adaptive: t = ", t_list[i])
+  )
+  
+  final_results_host <- cbind(
+    final_results_host,
+    final_results[, c(
+      paste0("Optimal: t = ", t_list[i]),
+      paste0("Data Adaptive: t = ", t_list[i])
+    )]
+  )
+}
+
+colnames(final_results_host) <- c(
+  "Effect Estimate",
+  "Performance Metric",
+  rep(c("Optimal", "Data Adaptive"), 4)
+)
+
+table <- kbl(
+  final_results_host,
+  format = "html",
+  caption = "Simulation results for host rule (n = 6692, replicates = 1000)",
+  booktabs = TRUE,
+  digits = 5
+) %>%
+  kable_styling(latex_options = "striped") %>%
+  column_spec(1, bold = TRUE, background = NULL) %>%
+  collapse_rows(columns = 1:2, latex_hline = "major", row_group_label_position = "first") %>%
+  add_header_above(c(" " = 2,
+                     "t = 0.025" = 2,
+                     "t = 0.050" = 2,
+                     "t = 0.075" = 2,
+                     "t = 0.100" = 2))
+
+print(table)

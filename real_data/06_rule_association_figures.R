@@ -16,8 +16,8 @@ source(here::here("00_load_and_prep_data.R"))
 # Read in results objects
 results_laz_comp <- readRDS(here::here("results_csv/results_gs_seed_1.Rds"))
 results_laz_host <- readRDS(here::here("results_csv/results_host_seed_1.Rds"))
-results_day3diar_comp <- readRDS(here::here("results_csv/results_day3diar_gs_seed1.Rds"))
-results_day3diar_host <- readRDS(here::here("results_csv/results_day3diar_host_seed1.Rds"))
+results_day3diar_comp <- readRDS(here::here("results_csv/results_day3diar_gs_seed_1.Rds"))
+results_day3diar_host <- readRDS(here::here("results_csv/results_day3diar_host_seed_1.Rds"))
 
 # Get decision dataframes
 decision_df_laz_comp <- results_laz_comp$`threshold =  0.06`$decision_df %>%
@@ -149,16 +149,15 @@ ggsave(here::here("figures/day3diar_comp_all.png"), combo_plot_day3diar_comp, wi
 ggsave(here::here("figures/day3diar_host_all.png"), combo_plot_day3diar_host, width = 12, height = 12, dpi = 300)
 
 # select top 3 strongest correlation from each rule
-# combo_plot_laz_comp = shigella (0.17), solid stool (0.17), number days diarrhea (-0.15)
 top_3_laz_comp <- c("shigella_new", "dy1_scrn_sstools", "dy1_scrn_diardays")
 
-# combo_plot_laz_host = baseline muac (-0.13), baseline wflz (-0.13), age (-0.09)
+# combo_plot_laz_host = baseline muac, baseline wflz, age
 top_3_laz_host <- c("avemuac", "wflzscore", "agemchild")
 
-# combo_plot_day3diar_comp = rota (.34), shigella (-0.23), salmonella (-0.17)
-top_3_day3diar_comp <- c("rotavirus_new", "shigella_new", "salmonella_new")
+# combo_plot_day3diar_comp = rota, shigella, muach
+top_3_day3diar_comp <- c("rotavirus_new", "shigella_new", "avemuac")
 
-# combo_plot_day3diar_host = muac (0.3), lfaz (0.23), wfaz (0.17)
+# combo_plot_day3diar_host = muac, lfaz , wfaz 
 top_3_day3diar_host <- c("avemuac", "lfazscore", "wfazscore")
 
 top_3_laz_comp_plot <- lapply(top_3_laz_comp, function(x) make_plot(all_decision_df, x, "CATE_laz_comp", "decision_laz_comp_0.06"))
@@ -225,7 +224,149 @@ ggsave(here::here("figures/top_three_laz.png"), combo_rule_plot_laz, width = 12,
 ggsave(here::here("figures/top_three_day_3.png"), combo_rule_plot_day_3, width = 12, height = 9, dpi = 300)
 
 
-# 
-# library(ggpubr)
-test <- ggarrange(all_rows, nrows = 4, common.legend = TRUE, legend = "bottom", widths = c(2,2,2))
-ggsave(here::here("figures/top_three_all_rules_with_legend.jpeg"), test, width = 12, height = 12, dpi = 300)
+################################################################################ 
+
+library(dplyr)
+library(ggplot2)
+library(patchwork)
+library(labelled)
+
+source(here::here("00_load_and_prep_data.R"))
+
+comp_covariates <- c(
+  "rotavirus_new", "norovirus_new", "adenovirus_new", "sapovirus_new",
+  "astrovirus_new", "st_etec_new", "shigella_new", "campylobacter_new",
+  "tepec_new", "v_cholerae_new", "salmonella_new", "cryptosporidium_new",
+  "dy1_scrn_vomitall", "dy1_scrn_lstools", "dy1_scrn_sstools",
+  "dy1_scrn_diardays", "dy1_scrn_dehydr", "avemuac", "wfazscore",
+  "lfazscore", "wflzscore", "dy1_ant_sex", "agemchild",
+  "an_ses_quintile", "an_tothhlt5"
+)
+
+make_plot <- function(df, x_var, y_var, decision_var, legend = FALSE){
+  
+  df$decision <- factor(df[[decision_var]],
+                        levels = 0:1,
+                        labels = c("Not recommended", "Recommended"))
+  
+  p <- ggplot(df, aes_string(x = x_var, y = y_var)) +
+    geom_point(size = 2, alpha = 0.3, aes(color = decision)) +
+    geom_smooth(method = lm) +
+    labs(
+      x = var_label(df[[x_var]]),
+      y = "CATE",
+      color = "Treatment recommendation"
+    ) +
+    scale_color_brewer(palette = "Pastel1") +
+    theme_minimal()
+  
+  if(legend){
+    p <- p + theme(legend.position = "bottom")
+  } else{
+    p <- p + theme(legend.position = "none")
+  }
+  
+  if(is.numeric(df[[x_var]])){
+    cor_x_cate <- cor(df[[x_var]], df[[y_var]], use = "complete.obs")
+    cor_label <- paste0("r = ", round(cor_x_cate, 2))
+    
+    p <- p +
+      annotate("text",
+               x = Inf, y = Inf,
+               label = cor_label,
+               hjust = 1.1, vjust = 1.5,
+               size = 4,
+               color = "black")
+  }
+  
+  return(p)
+}
+
+plot_list <- list()
+
+for(seed in 1:5){
+  
+  ## read results
+  res <- readRDS(
+    here::here(paste0("results_csv/results_day3diar_gs_seed_", seed, ".Rds"))
+  )
+  
+  ## decision dataframe
+  decision_df <- res$`threshold =  -0.06`$decision_df %>%
+    select(id, CATE_pred, decision) %>%
+    rename(
+      pid = id,
+      CATE = CATE_pred
+    )
+  
+  df <- left_join(abcd_data, decision_df, by = "pid")
+  
+  df <- left_join(abcd_data, decision_df, by = "pid") %>%
+    set_variable_labels(
+      rotavirus_new = "Rotavirus TAC quantity",
+      norovirus_new = "Norovirus TAC quantity",
+      adenovirus_new = "Adenovirus TAC quantity",
+      sapovirus_new = "Sapovirus TAC quantity",
+      astrovirus_new = "Astrovirus TAC quantity",
+      st_etec_new = "ST ETEC TAC quantity",
+      shigella_new = "Shigella TAC quantity",
+      campylobacter_new = "Campylobacter TAC quantity",
+      tepec_new = "tEPEC TAC quantity",
+      v_cholerae_new = "V Cholera TAC quantity",
+      salmonella_new = "Salmonella TAC quantity",
+      cryptosporidium_new = "Cryptosporidium TAC quantity",
+      dy1_scrn_vomitall = "Child vomits everything",
+      dy1_scrn_lstools = "Number of loose stools",
+      dy1_scrn_sstools = "Number of solid stools",
+      dy1_scrn_diardays = "Number of days of diarrhea",
+      dy1_scrn_dehydr = "Dehydration level",
+      avemuac = "Baseline mid-upper arm circumference",
+      wfazscore = "Baseline weight-for-age z-score",
+      lfazscore = "Baseline length-for-age z-score",
+      wflzscore = "Baseline weight-for-length z-score",
+      dy1_ant_sex = "Sex",
+      agemchild = "Age (Months)",
+      an_ses_quintile = "Socioeconomic quintile",
+      an_tothhlt5 = "Number of children in household <5 years of age"
+    )
+  
+  ## correlations
+  cors <- sapply(comp_covariates, function(v){
+    
+    if(is.numeric(df[[v]])){
+      abs(cor(df[[v]], df$CATE, use = "complete.obs"))
+    } else{
+      NA
+    }
+    
+  })
+  
+  top3 <- names(sort(cors, decreasing = TRUE))[1:3]
+  
+  cat("Seed", seed, ":", top3, "\n")
+  
+  ## plots
+  seed_plots <- lapply(top3, function(v){
+    
+    make_plot(df,
+              x_var = v,
+              y_var = "CATE",
+              decision_var = "decision")
+    
+  })
+  
+  ## add seed label on first plot
+  seed_plots[[1]] <- seed_plots[[1]] +
+    labs(subtitle = paste("Seed", seed))
+  
+  plot_list <- c(plot_list, seed_plots)
+}
+
+final_plot <-
+  wrap_plots(plot_list, ncol = 3) +
+  plot_annotation(
+    title = "Top three correlated predictors with CATE across random seeds",
+    subtitle = "Day 3 diarrhea comprehensive rule (threshold = -0.06)"
+  )
+
+ggsave(here::here("figures/top_3_day_3_over_seeds.png"), final_plot, width = 12, height = 12, dpi = 300)

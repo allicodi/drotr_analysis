@@ -2,9 +2,9 @@
 # Make figure with CATE distributions under each rule
 # ---------------------------------------------------------------------------
 
-here::i_am("sim_data/histogram_figure_manuscript.R")
+here::i_am("histogram_figure_manuscript.R")
 
-source("sim_data/00_simulate_data.R")
+source("00_simulate_data.R")
 
 library(ggplot2)
 library(patchwork)

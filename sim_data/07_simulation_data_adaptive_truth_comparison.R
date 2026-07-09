@@ -8,11 +8,11 @@ gs_data_adaptive_truth_df <- read.csv("truth/gs_data_adaptive_truth_by_seed.csv"
 host_data_adaptive_truth_df <- read.csv("truth/host_data_adaptive_truth_by_seed.csv")
 
 # read simulation results
-gs_results_df <- read.csv("results_csv/debug_gold_standard_n_6692.csv")
+gs_results_df <- read.csv("results_csv/gold_standard_n_6692.csv")
 host_results_df <- read.csv("results_csv/host_n_6692.csv")
 
 # list of same thresholds used for cate models
-threshold_list <- c(0.05)
+threshold_list <- c(0.05, 0.075, 0.25)
 
 # function to make table for a given threshold
 get_data_adaptive_results_table <- function(t, gs_data_adaptive_truth_df, host_data_adaptive_truth_df, gs_results_df, host_results_df){

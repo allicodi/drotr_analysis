@@ -4,7 +4,7 @@ library(dplyr)
 library(kableExtra)
 
 # missing_types <- c("mcar", "mar")
-missing_types <- c("mcar")
+missing_types <- c("mcar", "mar")
 threshold_list <- c(0.05)
 
 get_data_adaptive_results_table <- function(t,

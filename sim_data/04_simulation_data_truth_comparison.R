@@ -16,8 +16,8 @@ threshold_list <- c(0.05)
 # -------------------------------------
 get_results_table <- function(t, truth_df_gs, truth_df_host, gs_results_df, host_results_df){
  
-  true_threshold_gs_df <- truth_df_gs[truth_df_gs$t_list == t,]
-  true_threshold_host_df <- truth_df_host[truth_df_host$t_list == t,]
+  true_threshold_gs_df <- truth_df_gs[truth_df_gs$threshold == t,]
+  true_threshold_host_df <- truth_df_host[truth_df_host$threshold == t,]
   gs_threshold_df <- gs_results_df[gs_results_df$threshold == t,]
   host_threshold_df <- host_results_df[host_results_df$threshold == t,]
   

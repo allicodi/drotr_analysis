@@ -3,11 +3,11 @@ library(kableExtra)
 
 here::i_am("04_average_results.R")
 
-gs_results <- read.csv("results_csv/gold_standard_n_6692.csv")
-host_results <- read.csv("results_csv/host_n_6692.csv")
+gs_results <- read.csv("results_csv/gold_standard_n_6692.csv") %>% filter(seed %in% 1:5)
+host_results <- read.csv("results_csv/host_n_6692.csv") %>% filter(seed %in% 1:5)
 
-gs_day3diar <- read.csv("results_csv/gold_standard_day3diar_n_6692.csv")
-host_day3diar <- read.csv("results_csv/host_day3diar_n_6692.csv")
+gs_day3diar <- read.csv("results_csv/gold_standard_day3diar_n_6692.csv") %>% filter(seed %in% 1:5)
+host_day3diar <- read.csv("results_csv/host_day3diar_n_6692.csv") %>% filter(seed %in% 1:5)
 
 # Function to make a combined table
 make_combined_table <- function(results, rule = "Gold Standard") {
@@ -102,7 +102,7 @@ make_combined_table <- function(results, rule = "Gold Standard") {
     arrange(`Effect Estimate`, `Threshold`)
   
   # Create a single table with kable
-  table <- kbl(combined_results, caption = paste0("Real data analysis for ", rule, " rule across 10 seeds and different thresholds"), booktabs=T, digits=3) %>%
+  table <- kbl(combined_results, caption = paste0("Real data analysis for ", rule, " rule across 5 seeds and different thresholds"), booktabs=T, digits=3) %>%
     kable_styling(latex_options = "striped") %>%
     column_spec(1, bold=T) %>%
     collapse_rows(columns = 1, latex_hline = "major", row_group_label_position = "identity")
