@@ -238,9 +238,6 @@ ggplot(
   ) +
   theme_bw()
 
-
-
-
 ##########
 
 # Individual seed results
